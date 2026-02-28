@@ -12,7 +12,7 @@ class PasswordManager:
     def __init__(self):
         self.vaultKey = None
         self.vaultFile = None
-        self.vaultDictionary = None
+        self.vaultDictionary = {}
     
     def createKey(self, path:str, masterPassword:str) -> None:
         # https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet 
@@ -31,10 +31,12 @@ class PasswordManager:
 
 
     def loadKey(self, path:str, attemptedPassword:str) -> bool:
-        with open(path,'rb') as f:
-            salt = f.read(16)
-            readKey = f.read()
-        
+        try:
+            with open(path,'rb') as f:
+                salt = f.read(16)
+                readKey = f.read()
+        except Exception as e:
+            print(e)
         pw = attemptedPassword.encode('utf-8')
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256,
@@ -44,7 +46,7 @@ class PasswordManager:
         )
         resultKey = base64.urlsafe_b64encode(kdf.derive(pw))
         if readKey == resultKey:
-            self.vaultFile = resultKey
+            self.vaultKey = resultKey
             return True
         else:
             return False
@@ -56,12 +58,13 @@ class PasswordManager:
 
     def loadFile(self,path: str) -> None:
         self.vaultFile = path
-
-        with open(path,'r') as f:
-            for entry in f:
-                website, password = entry.split(":") # we are using a dictionary so to seperate the website and password (key, value pairs), we use split
-                self.vaultDictionary[website] = Fernet(self.vaultKey).decrypt(password.encode()).decode()
-
+        try:
+            with open(path,'r') as f:
+                for entry in f:
+                    website, password = entry.strip().split(":") # we are using a dictionary so to seperate the website and password (key, value pairs), we use split
+                    self.vaultDictionary[website] = Fernet(self.vaultKey).decrypt(password.encode()).decode()
+        except Exception as e:
+            print(e)
     def newEntry(self,website:str,password:str)-> None:
         self.vaultDictionary[website] = password
 
@@ -73,6 +76,16 @@ class PasswordManager:
     def deleteEntry(self, website:str) -> None:
         if website in self.vaultDictionary:
             self.vaultDictionary.pop(website) 
+    
+    def saveToFile(self):
+        if self.vaultFile is not None:
+            try:
+                with open(self.vaultFile, "w") as f:
+                    for site, password in self.vaultDictionary.items():
+                        encryptedPassword = Fernet(self.vaultKey).encrypt(password.encode())
+                        f.write(site + ":" + encryptedPassword.decode() + "\n")
+            except Exception as e:
+                print(e)
 
     def getPassword(self,website:str) -> str:
         return self.vaultDictionary[website]
@@ -82,7 +95,6 @@ class PasswordManager:
             self.newEntry(website, password)
 
 # -----------STUFF TO DO -----------
-# using os import, I want it to create some folders and do some checks
 # need to make menu with logic and strict rules - tkinter gui?
 
 class ProgramGUI:
@@ -97,6 +109,7 @@ class ProgramGUI:
         self.defaultTitleFont = ("Arial", 16, "Bold")
 
     def displayStartupMenu(self):
+        self.clearGUI()
 
         label = tk.Label(self.root, text="Welcome! Choose an option below:", font=self.defaultTitleFont)
         label.pack(pady=15)
@@ -108,18 +121,29 @@ class ProgramGUI:
     def loadVaultLocation(self):
 
         keyFile = fd.askopenfilename(title="Select your key file", filetypes=[("Key files", "*.key")])
-
-       
-
         vaultFile = fd.askopenfilename(title="Select your vault file", filetypes=[("Text files", "*.txt")])
-
-
         self.vaultKeyPath = keyFile
         self.vaultPath = vaultFile
 
-    def showLoginMenu(self):
-        label = tk.Label(self.root, text="Enter your master password:",font=self.defaultTitleFont)
+    def createVault(self):
+        vaultFile = fd.askdirectory(title = "Select where you want to create your vault")
         
+        self.vaultPath = vaultFile
+
+        vaultKeyFile = fd.askdirectory(title="Where do you want to store your keyfile?")
+        self.vaultKeyPath = vaultKeyFile
+        
+
+    def clearGUI(self):
+        # used to clear all elements within the GUI. Used to prevent visual bugs navigating between menus
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+
+    def showLoginMenu(self):
+        self.clearGUI()
+        label = tk.Label(self.root, text="Enter your master password:",font=self.defaultTitleFont)
+
 
     def displayMainMenu(self):
 
