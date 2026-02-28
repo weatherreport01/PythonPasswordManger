@@ -21,7 +21,7 @@ class PasswordManager:
         pw = masterPassword.encode('utf-8')
         salt = os.urandom(16)
         kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256,
+            algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=1_200_000
@@ -40,7 +40,7 @@ class PasswordManager:
             print(e)
         pw = attemptedPassword.encode('utf-8')
         kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256,
+            algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=1_200_000
@@ -129,10 +129,10 @@ class ProgramGUI:
 
     def loadVault(self):
         # need to add a file cancel check
-        keyFile = fd.askopenfilename(title="Select your key file", filetypes=[("Key files", "*.key")])
+        keyFile = fd.askopenfilename(title="Select your key file", filetypes=[("Key file", "*.key")])
         if not keyFile:
             return
-        vaultFile = fd.askopenfilename(title="Select your vault file", filetypes=[("Text files", "*.txt")])
+        vaultFile = fd.askopenfilename(title="Select your vault file", filetypes=[("Text file", "*.txt")])
         if not vaultFile:
             return
         self.vaultKeyPath = keyFile
@@ -141,12 +141,12 @@ class ProgramGUI:
 
     def createVault(self):
         # need to add a file cancel check
-        vaultFile = fd.asksaveasfilename(title = "Select where you want to create your vault", defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        vaultFile = fd.asksaveasfilename(title = "Select where you want to create your vault", defaultextension=".txt", filetypes=[("Text file", "*.txt")])
         if not vaultFile:
             return
         self.vaultPath = vaultFile
 
-        vaultKeyFile = fd.asksaveasfilename(title="Where do you want to store your keyfile?", defaultextension=".key", filetypes=[("Key files", "*.key")])
+        vaultKeyFile = fd.asksaveasfilename(title="Where do you want to store your keyfile?", defaultextension=".key", filetypes=[("Key file", "*.key")])
         if not vaultKeyFile:
             return
         self.vaultKeyPath = vaultKeyFile
@@ -164,8 +164,6 @@ class ProgramGUI:
         feedbackLabel = tk.Label(self.root,text="", width=20)
         feedbackLabel.pack(pady=5)
 
-        submitButton = tk.Button(self.root,text="Submit",command=createVault, width=20)
-        submitButton.pack(pady=5)
         def createVault():
             if not pwEntry.get().strip():
                 feedbackLabel.config(text="Password can't be empty!")
@@ -175,7 +173,9 @@ class ProgramGUI:
                 self.passwordManager.createKey(self.vaultKeyPath, pwEntry.get().strip())
                 self.passwordManager.createFile(self.vaultPath)
                 self.displayLoginMenu()
-
+        
+        submitButton = tk.Button(self.root,text="Submit",command=createVault, width=20)
+        submitButton.pack(pady=5)
 
     def clearGUI(self):
         # used to clear all elements within the GUI. Used to prevent visual bugs navigating between menus
@@ -193,8 +193,7 @@ class ProgramGUI:
         feedbackLabel = tk.Label(self.root,text="", width=20)
         feedbackLabel.pack(pady=5)
 
-        loginButton = tk.Button(self.root, text = "Login", command=tryLogin, width=20)
-        loginButton.pack(pady=5)
+        
 
         # looked up different ways to do this and decided to do it this way. Can't pass arguments with tk button.
         def tryLogin():
@@ -202,6 +201,7 @@ class ProgramGUI:
 
             if not attemptPassword:
                 feedbackLabel.config(text="Can't be empty!")
+                pwEntry.delete(0,tk.LAST)
                 return
             
             if self.passwordManager.loadKey(self.vaultKeyPath, attemptPassword):
@@ -209,10 +209,13 @@ class ProgramGUI:
                 self.displayMainMenu()
             else:
                 feedbackLabel.config(text="Wrong password! Try again.")
+                pwEntry.delete(0,tk.LAST)
+
+        loginButton = tk.Button(self.root, text = "Login", command=tryLogin, width=20)
+        loginButton.pack(pady=5)
 
     def displayMainMenu(self):
 
-        # rewrite needed
         self.clearGUI()
         label = tk.Label(self.root, text="Main Menu", font=self.defaultTitleFont)
         label.pack(pady=10)
@@ -237,7 +240,7 @@ class ProgramGUI:
         topFrame = tk.Frame(self.root)
         topFrame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
-        backButton = tk.Button(topFrame,text="Back to main menu", command=self.displayMainMenu, width=10)
+        backButton = tk.Button(topFrame,text="Back", command=self.displayMainMenu, width=10)
         backButton.pack(side=tk.LEFT)
 
         websiteLabel = tk.Label(self.root, text="Enter a website: ")
@@ -250,10 +253,9 @@ class ProgramGUI:
         passwordEntry = tk.Entry(self.root, width=30, show="*")
         passwordEntry.pack()
 
-        feedbackLabel = tk.Label(self.root,text="",width=20)
+        feedbackLabel = tk.Label(self.root,text="",width=35)
         feedbackLabel.pack(pady=5)
-        submitButton = tk.Button(self.root, text="Add to vault", command=addToVault, width=20)
-        submitButton.pack(pady=5)
+        
 
         def addToVault():
             if not websiteEntry.get().strip() or not passwordEntry.get().strip():
@@ -264,18 +266,23 @@ class ProgramGUI:
                 websiteEntry.delete(0,tk.END) # clears the entries
                 passwordEntry.delete(0,tk.END) # clears the entries
 
+        submitButton = tk.Button(self.root, text="Add to vault", command=addToVault, width=20)
+        submitButton.pack(pady=5)
+
     def viewPasswords(self):
         self.clearGUI()
 
         topFrame = tk.Frame(self.root)
         topFrame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
-        backButton = tk.Button(topFrame,text="Back to main menu", command=self.displayMainMenu, width=10)
+        backButton = tk.Button(topFrame,text="Back", command=self.displayMainMenu, width=10)
         backButton.pack(side=tk.LEFT)
 
         websites = self.passwordManager.getPasswords().keys()
         if not websites:
             contents = "No passwords are in the vault!"
+            displayLabel = tk.Label(self.root,text=contents, width=50)
+            displayLabel.pack(pady=10)
         else:
             contents=websites
             displayLabel = tk.Label(self.root,text=contents, width=50)
@@ -287,11 +294,10 @@ class ProgramGUI:
             websiteEntry = tk.Entry(self.root,width=20)
             websiteEntry.pack()
 
-            feedbackLabel = tk.Label(self.root,text="",width=20)
+            feedbackLabel = tk.Label(self.root,text="",width=35)
             feedbackLabel.pack(pady=5)
 
-            submitButton = tk.Button(self.root, text="Access password", command=decryptPassword, width=20)
-            submitButton.pack(pady=5)
+            
 
             def decryptPassword():
                 website = websiteEntry.get().strip()
@@ -303,13 +309,16 @@ class ProgramGUI:
                     feedbackLabel.config(text="Password copied to clipboard for 15 seconds!")
                     websiteEntry.delete(0,tk.END)
                     self.root.after(15000,self.root.clipboard_clear)
-        
+
+            submitButton = tk.Button(self.root, text="Access password", command=decryptPassword, width=20)
+            submitButton.pack(pady=5)
+
     def deletePassword(self):
         self.clearGUI()
         topFrame = tk.Frame(self.root)
         topFrame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
-        backButton = tk.Button(topFrame,text="Back to main menu", command=self.displayMainMenu, width=10)
+        backButton = tk.Button(topFrame,text="Back", command=self.displayMainMenu, width=10)
         backButton.pack(side=tk.LEFT)
 
         websiteLabel = tk.Label(self.root, text="Enter the website")
@@ -317,10 +326,9 @@ class ProgramGUI:
         websiteEntry = tk.Entry(self.root, width=30)
         websiteEntry.pack()
 
-        feedbackLabel = tk.Label(self.root,text="",width=20)
+        feedbackLabel = tk.Label(self.root,text="",width=35)
         feedbackLabel.pack(pady=5)
-        submitButton = tk.Button(self.root, text="Delete from vault",command=deleteFromVault, width=20)
-        submitButton.pack(pady=5)
+    
 
         def deleteFromVault():
             if not websiteEntry.get().strip():
@@ -332,5 +340,7 @@ class ProgramGUI:
                 feedbackLabel.config(text="Successfully deleted!")
                 websiteEntry.delete(0, tk.END)
 
+        submitButton = tk.Button(self.root, text="Delete from vault",command=deleteFromVault, width=20)
+        submitButton.pack(pady=5)
 test = ProgramGUI()
 test.root.mainloop()
