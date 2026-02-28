@@ -81,6 +81,7 @@ class PasswordManager:
             return None
         else:
             decrypted = Fernet(self.vaultKey).decrypt(self.vaultDictionary[website].encode()).decode()
+            return decrypted
 
 
     def saveToFile(self) -> None:
@@ -88,7 +89,7 @@ class PasswordManager:
             try:
                 with open(self.vaultFile, "w") as f:
                     for site, password in self.vaultDictionary.items():
-                        f.write(site + ":" + password.decode() + "\n")
+                        f.write(site + ":" + password + "\n")
             except Exception as e:
                 print(e)
 
@@ -111,7 +112,7 @@ class ProgramGUI:
 
         self.vaultPath = None
         self.vaultKeyPath = None
-        self.defaultTitleFont = ("Arial", 16, "Bold") # annoying to keep typing this so decided to put it here
+        self.defaultTitleFont = ("Arial", 16,) # annoying to keep typing this so decided to put it here
         self.root.protocol(("WM_DELETE_WINDOW"), self.exit)
         self.displayStartupMenu()
 
@@ -227,7 +228,7 @@ class ProgramGUI:
 
     
     def exit(self):
-        if messagebox.askyesno(title="Are you sure you want to exit? (Changes will be saved on exit)"):
+        if messagebox.askyesno(title="Are you sure?", message="Are you sure you want to exit? (Changes will be saved on exit)"):
             self.passwordManager.saveToFile()
             self.root.destroy()
       
@@ -276,6 +277,7 @@ class ProgramGUI:
         if not websites:
             contents = "No passwords are in the vault!"
         else:
+            contents=websites
             displayLabel = tk.Label(self.root,text=contents, width=50)
             displayLabel.pack(pady=10)
 
@@ -330,3 +332,5 @@ class ProgramGUI:
                 feedbackLabel.config(text="Successfully deleted!")
                 websiteEntry.delete(0, tk.END)
 
+test = ProgramGUI()
+test.root.mainloop()
