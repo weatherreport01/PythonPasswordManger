@@ -132,19 +132,41 @@ class ProgramGUI:
 
     def createVault(self):
         # need to add a file cancel check
-        vaultFile = fd.asksaveasfilename(title = "Select where you want to create your vault")
+        vaultFile = fd.asksaveasfilename(title = "Select where you want to create your vault", defaultextension=".txt", filetypes=[("Text files", "*.txt")])
         if not vaultFile:
             return
         self.vaultPath = vaultFile
 
-        vaultKeyFile = fd.asksaveasfilename(title="Where do you want to store your keyfile?")
+        vaultKeyFile = fd.asksaveasfilename(title="Where do you want to store your keyfile?", defaultextension=".key", filetypes=[("Key files", "*.key")])
         if not vaultKeyFile:
             return
         self.vaultKeyPath = vaultKeyFile
-
+        self.createNewMasterPassword()
 
     def createNewMasterPassword(self):
-        pass
+        self.clearGUI()
+
+        title = tk.Label(self.root, text="Enter your new master password", font=self.defaultTitleFont)
+        title.pack(pady=5)
+
+        pwEntry = tk.Entry(self.root,width=30, show="*")
+        pwEntry.pack(pady=5)
+
+        feedbackLabel = tk.Label(self.root,text="", width=20)
+        feedbackLabel.pack(pady=5)
+
+        submitButton = tk.Button(self.root,text="Submit",command=createVault, width=20)
+        submitButton.pack(pady=5)
+        def createVault():
+            if not pwEntry.get().strip():
+                feedbackLabel.config(text="Password can't be empty!")
+            elif len(pwEntry.get().strip()) < 20:
+                feedbackLabel.config(text="Password too short! Needs to be at least 20 characters long")
+            else:
+                self.passwordManager.createKey(self.vaultKeyPath, pwEntry.get().strip())
+                self.passwordManager.createFile(self.vaultPath)
+                self.displayLoginMenu()
+
 
     def clearGUI(self):
         # used to clear all elements within the GUI. Used to prevent visual bugs navigating between menus
@@ -156,7 +178,7 @@ class ProgramGUI:
         self.clearGUI()
         label = tk.Label(self.root, text="Enter your master password",font=self.defaultTitleFont)
         label.pack(pady=5)
-        pwEntry = tk.Entry(self.root, width=30)
+        pwEntry = tk.Entry(self.root, width=30, show="*")
         pwEntry.pack()
 
         feedbackLabel = tk.Label(self.root,text="", width=20)
@@ -171,6 +193,7 @@ class ProgramGUI:
 
             if not attemptPassword:
                 feedbackLabel.config(text="Can't be empty!")
+                return
             
             if self.passwordManager.loadKey(self.vaultKeyPath, attemptPassword):
                 self.passwordManager.loadFile(self.vaultPath)
@@ -215,7 +238,7 @@ class ProgramGUI:
 
         passwordLabel = tk.Label(self.root, text="Enter the password")
         passwordLabel.pack(pady=5)
-        passwordEntry = tk.Entry(self.root, width=30)
+        passwordEntry = tk.Entry(self.root, width=30, show="*")
         passwordEntry.pack()
 
         feedbackLabel = tk.Label(self.root,text="",width=20)
@@ -229,6 +252,8 @@ class ProgramGUI:
             else:
                 self.passwordManager.newEntry(websiteEntry.get().strip(),passwordEntry.get().strip())
                 feedbackLabel.config(text="Added password successfully!")
+                websiteEntry.delete(0,tk.END) # clears the entries
+                passwordEntry.delete(0,tk.END) # clears the entries
 
     def viewPasswords(self):
         self.clearGUI()
@@ -238,10 +263,13 @@ class ProgramGUI:
 
         backButton = tk.Button(topFrame,text="Back to main menu", command=self.displayMainMenu, width=10)
         backButton.pack(side=tk.LEFT)
-
-        contents = ""
-        for website, password in self.passwordManager.getPasswords().items():
-            contents += f"{website}: {password}\n"
+        passwords = self.passwordManager.getPasswords()
+        if not passwords:
+            contents = "No passwords are in the vault!"
+        else:
+            contents = ""
+            for website, password in self.passwordManager.getPasswords().items():
+                contents += f"{website}: {password}\n"
 
         displayLabel = tk.Label(self.root,text=contents, width=50)
         displayLabel.pack()
@@ -271,4 +299,6 @@ class ProgramGUI:
                 feedbackLabel.config(text="Not in the vault!")
             else:
                 self.passwordManager.deleteEntry(websiteEntry.get().strip())
+                feedbackLabel.config(text="Successfully deleted!")
+                websiteEntry.delete(0, tk.END)
 
