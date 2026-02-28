@@ -1,5 +1,7 @@
 import base64
 import os
+import tkinter as tk
+from tkinter import filedialog as fd
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
@@ -42,7 +44,7 @@ class PasswordManager:
         )
         resultKey = base64.urlsafe_b64encode(kdf.derive(pw))
         if readKey == resultKey:
-            self.vaultFile == resultKey
+            self.vaultFile = resultKey
             return True
         else:
             return False
@@ -82,3 +84,55 @@ class PasswordManager:
 # -----------STUFF TO DO -----------
 # using os import, I want it to create some folders and do some checks
 # need to make menu with logic and strict rules - tkinter gui?
+
+class ProgramGUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry("500x500")
+        self.root.title("Python Password Vault")
+        self.passwordManger = PasswordManager()
+
+        self.vaultPath = None
+        self.vaultKeyPath = None
+        self.defaultTitleFont = ("Arial", 16, "Bold")
+
+    def displayStartupMenu(self):
+
+        label = tk.Label(self.root, text="Welcome! Choose an option below:", font=self.defaultTitleFont)
+        label.pack(pady=15)
+
+        tk.Button(self.root, text="Load Vault", width=20,command=self.loadVaultLocation).pack(pady=10)
+        tk.Button(self.root, text="Create new vault", width=20, command=self.createVault).pack(pady=10)
+        
+
+    def loadVaultLocation(self):
+
+        keyFile = fd.askopenfilename(title="Select your key file", filetypes=[("Key files", "*.key")])
+
+       
+
+        vaultFile = fd.askopenfilename(title="Select your vault file", filetypes=[("Text files", "*.txt")])
+
+
+        self.vaultKeyPath = keyFile
+        self.vaultPath = vaultFile
+
+    def showLoginMenu(self):
+        label = tk.Label(self.root, text="Enter your master password:",font=self.defaultTitleFont)
+        
+
+    def displayMainMenu(self):
+
+        # rewrite needed
+
+
+        frame = tk.Frame(self.root)
+        label = tk.Label(frame, text="Main Menu", font=self.defaultTitleFont)
+        label.pack(pady=10)
+
+        tk.Button(frame, text="Add Password", width=20, command=self.addPassword).pack(pady=5)
+        tk.Button(frame, text="View Passwords", width=20, command=self.viewPassword).pack(pady=5)
+        tk.Button(frame, text="Delete Password", width=20, command=self.deletePassword).pack(pady=5)
+        tk.Button(frame, text="Exit", width=20, command = self.root.destroy()).pack(pady=5)
+      
+       
