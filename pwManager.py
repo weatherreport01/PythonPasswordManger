@@ -102,15 +102,17 @@ class ProgramGUI:
         self.root = tk.Tk()
         self.root.geometry("500x500")
         self.root.title("Python Password Vault")
-        self.passwordManger = PasswordManager()
+        self.passwordManager = PasswordManager()
 
         self.vaultPath = None
         self.vaultKeyPath = None
-        self.defaultTitleFont = ("Arial", 16, "Bold")
+        self.defaultTitleFont = ("Arial", 16, "Bold") # annoying to keep typing this so decided to put it here
+        self.displayLoginMenu()
 
     def displayStartupMenu(self):
+        # function called on initialization
         self.clearGUI()
-
+        
         label = tk.Label(self.root, text="Welcome! Choose an option below:", font=self.defaultTitleFont)
         label.pack(pady=15)
 
@@ -119,13 +121,14 @@ class ProgramGUI:
         
 
     def loadVaultLocation(self):
-
+        # need to add a file cancel check
         keyFile = fd.askopenfilename(title="Select your key file", filetypes=[("Key files", "*.key")])
         vaultFile = fd.askopenfilename(title="Select your vault file", filetypes=[("Text files", "*.txt")])
         self.vaultKeyPath = keyFile
         self.vaultPath = vaultFile
 
     def createVault(self):
+        # need to add a file cancel check
         vaultFile = fd.askdirectory(title = "Select where you want to create your vault")
         
         self.vaultPath = vaultFile
@@ -140,23 +143,43 @@ class ProgramGUI:
             widget.destroy()
 
 
-    def showLoginMenu(self):
+    def displayLoginMenu(self):
         self.clearGUI()
-        label = tk.Label(self.root, text="Enter your master password:",font=self.defaultTitleFont)
+        label = tk.Label(self.root, text="Enter your master password",font=self.defaultTitleFont)
+        label.pack()
+        pwEntry = tk.Entry(self.root, width=30)
+        pwEntry.pack()
 
+        
+        feedbackLabel = tk.Label(self.root,text="", width=20)
+        feedbackLabel.pack()
+
+        loginButton = tk.Button(self.root, text = "Login", command=self.tryLogin, width=20)
+        loginButton.pack()
+
+        # looked up different ways to do this and decided to do it this way. Can't pass arguments with tk button.
+        def tryLogin():
+            attemptPassword = pwEntry.get()
+
+            if not attemptPassword:
+                feedbackLabel.config(text="Can't be empty!")
+            
+            if self.passwordManager.loadKey(self.vaultKeyPath, attemptPassword):
+                self.passwordManager.loadFile(self.vaultPath)
+                self.displayMainMenu()
+            else:
+                feedbackLabel.config(text="Wrong password! Try again.")
 
     def displayMainMenu(self):
 
         # rewrite needed
-
-
-        frame = tk.Frame(self.root)
-        label = tk.Label(frame, text="Main Menu", font=self.defaultTitleFont)
+        self.clearGUI()
+        label = tk.Label(self.root, text="Main Menu", font=self.defaultTitleFont)
         label.pack(pady=10)
 
-        tk.Button(frame, text="Add Password", width=20, command=self.addPassword).pack(pady=5)
-        tk.Button(frame, text="View Passwords", width=20, command=self.viewPassword).pack(pady=5)
-        tk.Button(frame, text="Delete Password", width=20, command=self.deletePassword).pack(pady=5)
-        tk.Button(frame, text="Exit", width=20, command = self.root.destroy()).pack(pady=5)
+        addPwButton = tk.Button(self.root, text="Add Password", width=20, command=self.addPassword).pack(pady=5)
+        viewPwButton = tk.Button(self.root, text="View Passwords", width=20, command=self.viewPassword).pack(pady=5)
+        deletePwButton = tk.Button(self.root, text="Delete Password", width=20, command=self.deletePassword).pack(pady=5)
+        exitButton = tk.Button(self.root, text="Exit", width=20, command = self.root.destroy).pack(pady=5)
       
        
