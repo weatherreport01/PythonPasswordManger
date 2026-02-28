@@ -63,27 +63,35 @@ class PasswordManager:
             with open(path,'r') as f:
                 for entry in f:
                     website, password = entry.strip().split(":") # we are using a dictionary so to seperate the website and password (key, value pairs), we use split
-                    self.vaultDictionary[website] = Fernet(self.vaultKey).decrypt(password.encode()).decode()
+                    self.vaultDictionary[website] = password
         except Exception as e:
             print(e)
             
     def newEntry(self,website:str,password:str)-> None:
-        self.vaultDictionary[website] = password
+        if website not in self.vaultDictionary:
+            encryptedPassword = Fernet(self.vaultKey).encrypt(password.encode()).decode()
+            self.vaultDictionary[website] = encryptedPassword
 
     def deleteEntry(self, website:str) -> None:
         if website in self.vaultDictionary:
             self.vaultDictionary.pop(website) 
 
-    
+    def decryptPassword(self, website:str) -> str:
+        if website not in self.vaultDictionary:
+            return None
+        else:
+            decrypted = Fernet(self.vaultKey).decrypt(self.vaultDictionary[website].encode()).decode()
+
+
     def saveToFile(self) -> None:
         if self.vaultFile is not None:
             try:
                 with open(self.vaultFile, "w") as f:
                     for site, password in self.vaultDictionary.items():
-                        encryptedPassword = Fernet(self.vaultKey).encrypt(password.encode())
-                        f.write(site + ":" + encryptedPassword.decode() + "\n")
+                        f.write(site + ":" + password.decode() + "\n")
             except Exception as e:
                 print(e)
+
     def getPasswords(self) -> dict:
         return self.vaultDictionary
     
@@ -263,17 +271,37 @@ class ProgramGUI:
 
         backButton = tk.Button(topFrame,text="Back to main menu", command=self.displayMainMenu, width=10)
         backButton.pack(side=tk.LEFT)
-        passwords = self.passwordManager.getPasswords()
-        if not passwords:
+
+        websites = self.passwordManager.getPasswords().keys()
+        if not websites:
             contents = "No passwords are in the vault!"
         else:
-            contents = ""
-            for website, password in self.passwordManager.getPasswords().items():
-                contents += f"{website}: {password}\n"
+            displayLabel = tk.Label(self.root,text=contents, width=50)
+            displayLabel.pack(pady=10)
 
-        displayLabel = tk.Label(self.root,text=contents, width=50)
-        displayLabel.pack()
-    
+            websiteLabel = tk.Label(self.root,text="Enter the website you want the password for",font=self.defaultTitleFont)
+            websiteLabel.pack(pady=5)
+
+            websiteEntry = tk.Entry(self.root,width=20)
+            websiteEntry.pack()
+
+            feedbackLabel = tk.Label(self.root,text="",width=20)
+            feedbackLabel.pack(pady=5)
+
+            submitButton = tk.Button(self.root, text="Access password", command=decryptPassword, width=20)
+            submitButton.pack(pady=5)
+
+            def decryptPassword():
+                website = websiteEntry.get().strip()
+                password = self.passwordManager.decryptPassword(website)
+                if not password:
+                    feedbackLabel.config(text="Something went wrong!")
+                else:
+                    self.root.clipboard_append(password)
+                    feedbackLabel.config(text="Password copied to clipboard for 15 seconds!")
+                    websiteEntry.delete(0,tk.END)
+                    self.root.after(15000,self.root.clipboard_clear)
+        
     def deletePassword(self):
         self.clearGUI()
         topFrame = tk.Frame(self.root)
