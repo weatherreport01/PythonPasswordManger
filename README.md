@@ -1,9 +1,7 @@
 # PythonPasswordManger
 
 ## Description
-Basic python password manager with encryption and a hashed master password. I decided to create this project to improve my understanding of encryption, while making something I'm actually interested in.
+Basic python password manager with encryption and a hashed master password. I decided to create this project to improve my understanding of encryption and GUIs. 
 
-## To-Do:
-- Create a basic GUI using Tkinter
-- Add checks within the menu and functions called
-- Clear things up
+Tkinter was used for the GUI. This was my first time using this, so it's quite basic.
+
